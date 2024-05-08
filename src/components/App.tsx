@@ -1,39 +1,42 @@
-import { Canvas } from './Canvas'
 import Mario from './../assets/mario.png'
-import { useEffect, useState } from 'react'
+import MarioGIF from './../assets/mario.gif'
+import { useEffect, useRef, useState } from 'react'
 
 function App() {
   const [marioPos, setMarioPos] = useState({ x: 0, y: 500 })
-
-  const marioActions = {
-    move: (direction: string) => {
-      direction === 'ArrowRight'
-        ? setMarioPos((prevState) => ({ ...prevState, x: prevState.x + 5 }))
-        : setMarioPos((prevState) => ({ ...prevState, x: prevState.x - 5 }))
-    },
-    jump: (type: string) => {
-      type === 'keydown'
-        ? setMarioPos((prevState) => ({ ...prevState, y: prevState.y - 150  }))
-        : setMarioPos((prevState) => ({ ...prevState, y: prevState.y + 150  }))
-    }
-  }
+  const [walkDirection, setWalkDirection] = useState('right')
+  const jumpDirection = useRef('right')
 
   const calculateMarioPos = (e: KeyboardEvent) => {
-    const { code, type } = e
+    const { code, type, repeat } = e
+    if (repeat && code === 'Space') return // Prevents multiple jumps
 
-    switch (code) {
-      case 'ArrowRight':
-      case 'ArrowLeft':
-        marioActions.move(code)
-        break
-      case 'Space':
-        marioActions.jump(type)
-        break
-      default:
-        return
-        break
+    if (code === 'ArrowRight' || code === 'ArrowLeft') {
+      setWalkDirection(code === 'ArrowRight' ? 'right' : 'left')
+      jumpDirection.current = code === 'ArrowRight' ? 'right' : 'left'
+      code === 'ArrowRight'
+        ? setMarioPos((prevState) => ({ ...prevState, x: prevState.x + 5 }))
+        : setMarioPos((prevState) => ({ ...prevState, x: prevState.x - 5 }))
+    }
+    if (code === 'Space') {
+      type === 'keydown'
+        ? setMarioPos((prevState) => ({
+            x:
+              jumpDirection.current === 'right'
+                ? prevState.x + 50
+                : prevState.x - 50,
+            y: prevState.y - 150
+          }))
+        : setMarioPos((prevState) => ({
+            x:
+              jumpDirection.current === 'right'
+                ? prevState.x + 50
+                : prevState.x - 50,
+            y: prevState.y + 150
+          }))
     }
   }
+
   useEffect(() => {
     window.addEventListener('keydown', calculateMarioPos)
     window.addEventListener('keyup', calculateMarioPos)
@@ -41,17 +44,19 @@ function App() {
     return () => {
       window.removeEventListener('keydown', calculateMarioPos)
       window.removeEventListener('keyup', calculateMarioPos)
-    } 
+    }
   }, [])
   return (
     <div className="App h-screen w-screen border-1 bg-black">
       <div className="Mario">
         <img
-          src={Mario}
+          src={MarioGIF}
           alt="Mario"
-          className="w-10 h-10 absolute transition duration-150 ease-out md:ease-in"
+          className="w-20 h-20 absolute transition duration-150 ease-out lg:ease-in"
           style={{
-            transform: `translateX(${marioPos.x}%) translateY(${marioPos.y}%)`
+            transform: `translateX(${marioPos.x}%) translateY(${
+              marioPos.y
+            }%) rotateY(${walkDirection === 'right' ? 0 : 180}deg)`
           }}
         />
       </div>
